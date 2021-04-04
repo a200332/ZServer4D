@@ -137,6 +137,10 @@ object DataStoreServerForm: TDataStoreServerForm
     object OptTabSheet: TTabSheet
       Caption = 'Options'
       ImageIndex = 2
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 0
       object BindIPEdit: TLabeledEdit
         Left = 136
         Top = 11
@@ -175,6 +179,10 @@ object DataStoreServerForm: TDataStoreServerForm
     object ConnectTreeTabSheet: TTabSheet
       Caption = 'connect tree'
       ImageIndex = 1
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 0
       object TreeView: TTreeView
         Left = 0
         Top = 0
@@ -188,6 +196,10 @@ object DataStoreServerForm: TDataStoreServerForm
     object DBWatchTabSheet: TTabSheet
       Caption = 'Query Watch'
       ImageIndex = 3
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 0
       object WatchMemo: TMemo
         Left = 0
         Top = 0

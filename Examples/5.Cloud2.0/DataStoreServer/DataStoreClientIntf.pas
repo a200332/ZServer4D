@@ -7,8 +7,8 @@ uses Variants, SysUtils, Types, DateUtils,
   CoreClasses, TextDataEngine, ListEngine, CommunicationFramework,
   DoStatusIO, UnicodeMixedLib, DataFrameEngine, Cadencer,
   NotifyObjectBase,
-  CommunicationFramework_Client_CrossSocket,
-  CommunicationFramework_Client_ICS,
+  PhysicsIO,
+  CommunicationFrameworkDoubleTunnelIO_ServMan,
   CommunicationFrameworkDataStoreService_NoAuth, PascalStrings,
   MemoryStream64, ZDBEngine, ZDBLocalManager;
 
@@ -62,7 +62,7 @@ constructor TDataStore_DoubleTunnelClient.Create(ClientClass: TCommunicationFram
 begin
   NetRecvTunnelIntf := ClientClass.Create;
   NetSendTunnelIntf := ClientClass.Create;
-  NetSendTunnelIntf.PrintParams['AntiIdle'] := False;
+  NetSendTunnelIntf.PrintParams[C_AntiIdle] := False;
   ConnectInfo.DBServAddr := '';
   ConnectInfo.DBCliRecvPort := 0;
   ConnectInfo.DBCliSendPort := 0;

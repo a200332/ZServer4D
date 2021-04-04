@@ -38,7 +38,7 @@ type
     SyncToClient: Boolean;
     RegistedQuery: SystemString;
 
-    constructor Create(InMem: Boolean; AOwner: TZDBLocalManager; sourDBName, APipelineN, OutDBName: SystemString); override;
+    constructor Create(InMem: Boolean; Owner_: TZDBLocalManager; sourDBName, APipelineN, OutDBName: SystemString); override;
     destructor Destroy; override;
 
     procedure Progress(deltaTime: Double); override;
@@ -120,7 +120,7 @@ type
     procedure Init;
   end;
 
-  // client storePos transform
+  { client storePos transform }
   TStorePosTransformNotifyCall = procedure(const TransformBuff: PZDBStorePosTransformArray);
   TStorePosTransformNotifyMethod = procedure(const TransformBuff: PZDBStorePosTransformArray) of object;
 {$IFDEF FPC}
@@ -142,7 +142,7 @@ type
     DBCounter, QueryCounter, QueryResultCounter, MaxQueryCompare, MaxQueryResult: Int64;
     QueryPerformanceOfPerSec, ConsumTime, MaxWaitTime: Double;
     SourceDB, OutputDB, PipelineName, RegistedQuery: SystemString;
-    //
+    { }
     procedure Init;
     procedure Encode(d: TDataFrameEngine);
     procedure Decode(d: TDataFrameEngine);
@@ -153,9 +153,9 @@ type
 
 implementation
 
-constructor TTDataStoreService_DBPipeline.Create(InMem: Boolean; AOwner: TZDBLocalManager; sourDBName, APipelineN, OutDBName: SystemString);
+constructor TTDataStoreService_DBPipeline.Create(InMem: Boolean; Owner_: TZDBLocalManager; sourDBName, APipelineN, OutDBName: SystemString);
 begin
-  inherited Create(InMem, AOwner, sourDBName, APipelineN, OutDBName);
+  inherited Create(InMem, Owner_, sourDBName, APipelineN, OutDBName);
   SendTunnel := nil;
   RecvTunnel := nil;
   BackcallPtr := 0;

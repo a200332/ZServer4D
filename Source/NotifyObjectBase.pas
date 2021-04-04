@@ -152,8 +152,25 @@ type
     property CadencerEngine: TCadencer read FCadencerEngine;
   end;
 
+var
+  ProgressCadencer: TNProgressPostWithCadencer;
+
 implementation
 
+var
+  Hooked_OnCheckThreadSynchronize: TCheckThreadSynchronize;
+
+procedure DoCheckThreadSynchronize();
+begin
+  if Assigned(Hooked_OnCheckThreadSynchronize) then
+    begin
+      try
+          Hooked_OnCheckThreadSynchronize();
+      except
+      end;
+    end;
+  ProgressCadencer.Progress;
+end;
 
 procedure TNotifyBase.DeleteSaveNotifyIntf(p: TNotifyBase);
 var
@@ -586,5 +603,16 @@ procedure TNProgressPostWithCadencer.Progress;
 begin
   FCadencerEngine.Progress;
 end;
+
+initialization
+
+Hooked_OnCheckThreadSynchronize := CoreClasses.OnCheckThreadSynchronize;
+CoreClasses.OnCheckThreadSynchronize := {$IFDEF FPC}@{$ENDIF FPC}DoCheckThreadSynchronize;
+ProgressCadencer := TNProgressPostWithCadencer.Create;
+
+finalization
+
+CoreClasses.OnCheckThreadSynchronize := Hooked_OnCheckThreadSynchronize;
+DisposeObject(ProgressCadencer);
 
 end.

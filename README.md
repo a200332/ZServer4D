@@ -1,6 +1,7 @@
 ## 介绍
 
 ZSERVER4D是一套高级通讯系统的地基平台，它偏向于开发工艺和多平台支持
+
  
 ## 功能
 
@@ -130,6 +131,8 @@ ZServer4D的前后台均支持苹果要求的IPV6审核条件，支持AAAA,A记�
 
 [解疑：为什么通过网络传任何文件都要验证](https://github.com/PassByYou888/ZServer4D/blob/master/Documents/%E8%A7%A3%E7%96%91%EF%BC%9A%E4%B8%BA%E4%BB%80%E4%B9%88%E9%80%9A%E8%BF%87%E7%BD%91%E7%BB%9C%E4%BC%A0%E4%BB%BB%E4%BD%95%E6%96%87%E4%BB%B6%E9%83%BD%E8%A6%81%E9%AA%8C%E8%AF%81.pdf)
 
+[解疑：为什么ZServer4D不能在线程中使用](https://github.com/PassByYou888/ZServer4D/blob/master/Documents/%E8%A7%A3%E7%96%91%EF%BC%9A%E4%B8%BA%E4%BB%80%E4%B9%88ZServer4D%E4%B8%8D%E8%83%BD%E5%9C%A8%E7%BA%BF%E7%A8%8B%E4%B8%AD%E4%BD%BF%E7%94%A8.pdf)
+
 **ZDB:** 
 
 [使用ZDB：1.认识ZDB](https://github.com/PassByYou888/ZServer4D/blob/master/Documents/%E4%BD%BF%E7%94%A8ZDB%EF%BC%9A1.%E8%AE%A4%E8%AF%86ZDB.pdf)
@@ -139,6 +142,8 @@ ZServer4D的前后台均支持苹果要求的IPV6审核条件，支持AAAA,A记�
 [使用ZDB：3.数据策略](https://github.com/PassByYou888/ZServer4D/blob/master/Documents/%E4%BD%BF%E7%94%A8ZDB%EF%BC%9A3.%E6%95%B0%E6%8D%AE%E7%AD%96%E7%95%A5.pdf)
 
 **其它**
+
+[双通道多线下载技术](https://github.com/PassByYou888/ZServer4D/blob/master/Documents/%E5%8F%8C%E9%80%9A%E9%81%93%E5%A4%9A%E7%BA%BF%E4%B8%8B%E8%BD%BD%E6%8A%80%E6%9C%AF.pdf)
 
 [云调度服务器用法详解](https://github.com/PassByYou888/ZServer4D/blob/master/Documents/%E4%BA%91%E8%B0%83%E5%BA%A6%E6%9C%8D%E5%8A%A1%E5%99%A8%E7%94%A8%E6%B3%95%E8%AF%A6%E8%A7%A3.pdf)
 
@@ -239,39 +244,37 @@ ZServer4D内置的客户端接口，某些库采用的是用完抛弃的设计�
 
 ZServer4D是系统化的生产工艺地基，它并不像VCL那样傻瓜，可以拿来就用，你需要自行动手进行需求的提炼，简单来说，你必须自己动手封装，然后再使用。ZServer4D有丰富Demo和文档提供技术参考。
 
+**注意：2020/12月期间项目繁多，我在项目开发中使用10.3.3在ARM平台ARC会自动释放我的变量，调试一天无解。如果使用ZS开发手机，请换10.4或则以后的版本。开发Win32/Linux可以继续使用现有工具**
 
-## 最后一更新日志
-
-**内核更新**
-
-- 并行机制更新
-- 分线程机制更新
-- 新增统配符demo
-- 新增了一个非常详细的并行化机理demo
-- Tools若干代码更新
+**在linux使用fpc时需要外挂一个MM库，jemalloc/tcmalloc均可，自行编译接口**
 
 
-**本次更新有点巨大，以下只罗列了重大更新**
+## 最后更新日志
 
-- ZDB内核更新：数据库遍历机制的性能提升10%
-- ZDB内核更新：新增非定长数据结构，新数据结构可以兼容以前ZDB的格式
-- ZDB工具更新：FilePackageWithZDB同步支持非定长数据结构
-- ZDB数据引擎支持文件分包，合包系统（后续我会新提交一个开源的安装程序系统上来，这项分包合包将会是重要功能）
+**大更新数据编码方式**
 
+- 优化单通道双工机制，CustomProtocol模型可与oc/swift/c++/java的异步双工良好对接，在ZAI授权项目已有商业案例!
+- DataFrameEngine的Array类型全部使用连续类型分配，不再使用指针分配
+- DataFrameEngine新增FastEncodeTo方法替代EncodeTo，FastEngineTo构建二进制数据结构在高并发环境下与EncodeTo差别很大，FastEngineTo使用零copy机制构建二进制结构
+- 当FastEncrypt为True，全部使用FastEncodeTo发送数据，默认情况下为True
+- 默认通讯协议不再压缩
+- 通讯性能大约提升10%
+- 默认情况下不再使用种子数加密，但是仍然兼容种子数加密
+- 大更新兼容老协议，对原有服务器和客户端无影响
 
-- 百度翻译API更新：因为百度翻译限制翻译频率为1秒一次，百度翻译API调用机制已经同步更新，如果你在使用zTranslate，你会需要使用本次更新
+**加解密性能优化**
 
+- ZS过去使用的协议加密方式会反复生成密钥,现在使用实例化密钥替代,加密性能大约提升了1倍
+- 跑压力测试demo请使用服务器系统,win10跑压测可能发生假死现象
 
-- FastMD5库更新：近期遇到过一个可以算bug也可以不算bug的问题，由于外面调用API的疏忽，出现非法内存访问，该异常直接在FastMD5这个库触发，经过很久检查才发现是外部程序的调用疏忽，这类疏忽很容易发生在粗心大意的人手上，因此FastMD5新增了一项安全检查机制
+**全面支持Radstudio10.4.2**
 
-
-- ZServer的只读文件打开方式更新：更新成OpenReadOnly
-- ZServer的数据结构库更新：TDataFrameEngine现在可以支持对大于4G的数据打包，内部存储ID新增数十种，使用上无任何变化
-- ZServer内核更新：以重载方式新增反馈命令在未收到远程反馈时会触发一个异常事件(**内核机制更新**)
-- 新增文档：异步通讯模型编程引导
-
+- 修复p2pVM主循环问题
+- 内核新增OrderStrtuct以支持ThreadPos
+- 全面支持10.4.2
 
 [更多更新日志](https://github.com/PassByYou888/ZServer4D/update.md)
+
 
 ## 注意
 

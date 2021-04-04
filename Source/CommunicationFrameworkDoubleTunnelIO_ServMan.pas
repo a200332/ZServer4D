@@ -33,7 +33,7 @@ uses
 const
   DEFAULT_MANAGERSERVICE_RECVPORT: Word = 13336;
   DEFAULT_MANAGERSERVICE_SENDPORT: Word = 13335;
-  CDEFAULT_MANAGERSERVICE_QUERYPORT: Word = 10888;
+  DEFAULT_MANAGERSERVICE_QUERYPORT: Word = 10888;
 
 {$INCLUDE ServerManTypeDefine.inc}
 
@@ -67,7 +67,7 @@ type
     ConnectInfo: TServerManager_ClientConnectInfo;
     ReconnectTotal: Integer;
 
-    constructor Create(AOwner: TServerManager_ClientPool);
+    constructor Create(Owner_: TServerManager_ClientPool);
     destructor Destroy; override;
 
     procedure RegisterCommand; override;
@@ -95,7 +95,7 @@ type
     DefaultClientClass: TCommunicationFrameworkClientClass;
     NotifyIntf: IServerManager_ClientPoolNotify;
 
-    constructor Create(AClientClass: TCommunicationFrameworkClientClass; ANotifyIntf: IServerManager_ClientPoolNotify);
+    constructor Create(ClientClass_: TCommunicationFrameworkClientClass; NotifyIntf_: IServerManager_ClientPoolNotify);
     destructor Destroy; override;
 
     function ActivtedCount: Integer;
@@ -113,7 +113,7 @@ type
 
   TServerManager_SendTunnelData = class(TPeerClientUserDefineForSendTunnel_NoAuth)
   public
-    constructor Create(AOwner: TPeerIO); override;
+    constructor Create(Owner_: TPeerIO); override;
     destructor Destroy; override;
   end;
 
@@ -126,7 +126,7 @@ type
     ServerType: TServerType;
     SuccessEnabled: Boolean;
   public
-    constructor Create(AOwner: TPeerIO); override;
+    constructor Create(Owner_: TPeerIO); override;
     destructor Destroy; override;
 
     procedure WriteConfig(t: TSectionTextData);
@@ -140,7 +140,7 @@ type
     procedure PostExecute_ServerOffline(Sender: TNPostExecute);
     procedure PostExecute_RegServer(Sender: TNPostExecute);
   protected
-    // manager client
+    { manager client }
     procedure Command_EnabledServer(Sender: TPeerIO; InData, OutData: TDataFrameEngine);
     procedure PostExecute_Disconnect(Sender: TNPostExecute);
     procedure Command_AntiIdle(Sender: TPeerIO; InData: TDataFrameEngine);
@@ -152,7 +152,7 @@ type
     ServManClientPool: TServerManager_ClientPool;
     LastTimeTick: TTimeTick;
 
-    constructor Create(ARecvTunnel, ASendTunnel: TCommunicationFrameworkServer; AClientPoolDefaultClass: TCommunicationFrameworkClientClass);
+    constructor Create(RecvTunnel_, SendTunnel_: TCommunicationFrameworkServer; AClientPoolDefaultClass: TCommunicationFrameworkClientClass);
     destructor Destroy; override;
 
     procedure RegisterCommand; override;
@@ -163,13 +163,13 @@ type
 
 function serverType2Str(t: TServerType): SystemString;
 
-implementation
-
 const
   C_RegServer = '__@RegServer';
   C_Offline = '__@Offline';
   C_EnabledServer = '__@EnabledServer';
   C_AntiIdle = '__@AntiIdle';
+
+implementation
 
 function serverType2Str(t: TServerType): SystemString;
 begin
@@ -238,9 +238,9 @@ begin
   ProgressEngine.PostExecuteM(InData, {$IFDEF FPC}@{$ENDIF FPC}PostExecute_Offline);
 end;
 
-constructor TServerManager_Client.Create(AOwner: TServerManager_ClientPool);
+constructor TServerManager_Client.Create(Owner_: TServerManager_ClientPool);
 begin
-  Owner := AOwner;
+  Owner := Owner_;
   NetRecvTunnelIntf := Owner.DefaultClientClass.Create;
   NetSendTunnelIntf := Owner.DefaultClientClass.Create;
   NetSendTunnelIntf.PrintParams[C_AntiIdle] := False;
@@ -300,7 +300,9 @@ procedure TServerManager_Client.AntiIdle(WorkLoad: Word);
 var
   sendDE: TDataFrameEngine;
 begin
-  if SendTunnel.IOBusy then
+  if SendTunnel.ClientIO.IOBusy then
+      exit;
+  if SendTunnel.SequencePacketActivted then
       exit;
   sendDE := TDataFrameEngine.Create;
   sendDE.WriteWORD(WorkLoad);
@@ -356,7 +358,7 @@ begin
   FClientList[index] := Value;
 end;
 
-constructor TServerManager_ClientPool.Create(AClientClass: TCommunicationFrameworkClientClass; ANotifyIntf: IServerManager_ClientPoolNotify);
+constructor TServerManager_ClientPool.Create(ClientClass_: TCommunicationFrameworkClientClass; NotifyIntf_: IServerManager_ClientPoolNotify);
 begin
   inherited Create;
   FClientList := TCoreClassListForObj.Create;
@@ -368,8 +370,8 @@ begin
   LastRegSendPort := 0;
   AntiIdleIsRun := False;
   ServerConfig := TSectionTextData.Create;
-  DefaultClientClass := AClientClass;
-  NotifyIntf := ANotifyIntf;
+  DefaultClientClass := ClientClass_;
+  NotifyIntf := NotifyIntf_;
 end;
 
 destructor TServerManager_ClientPool.Destroy;
@@ -455,7 +457,9 @@ begin
               end;
           end
         else
+          begin
             c.AntiIdle(WorkLoad);
+          end;
         inc(i);
       end;
   except
@@ -506,9 +510,9 @@ begin
       DisposeObject(c);
 end;
 
-constructor TServerManager_SendTunnelData.Create(AOwner: TPeerIO);
+constructor TServerManager_SendTunnelData.Create(Owner_: TPeerIO);
 begin
-  inherited Create(AOwner);
+  inherited Create(Owner_);
 end;
 
 destructor TServerManager_SendTunnelData.Destroy;
@@ -516,9 +520,9 @@ begin
   inherited Destroy;
 end;
 
-constructor TServerManager_RecvTunnelData.Create(AOwner: TPeerIO);
+constructor TServerManager_RecvTunnelData.Create(Owner_: TPeerIO);
 begin
-  inherited Create(AOwner);
+  inherited Create(Owner_);
   Regname := '';
   RegAddr := '';
   RegRecvPort := 0;
@@ -588,7 +592,7 @@ begin
 
   if cli.ServerType = TServerType.stManager then
     begin
-      // delete local configure
+      { delete local configure }
       ns := TCoreClassStringList.Create;
       ServerConfig.GetSectionList(ns);
 
@@ -600,7 +604,7 @@ begin
         end;
       DisposeObject(ns);
 
-      // sync all client
+      { sync all client }
       ProgressEngine.PostExecuteM(nil, {$IFDEF FPC}@{$ENDIF FPC}PostExecute_RegServer);
     end;
 
@@ -609,7 +613,7 @@ end;
 
 procedure TServerManager.PostExecute_ServerOffline(Sender: TNPostExecute);
 begin
-  SendTunnel.BroadcastSendDirectStreamCmd(C_Offline, Sender.DataEng);
+  SendTunnel.BroadcastDirectStreamCmd(C_Offline, Sender.DataEng);
 end;
 
 procedure TServerManager.PostExecute_RegServer(Sender: TNPostExecute);
@@ -620,7 +624,7 @@ var
   peer: TPeerIO;
   c: TServerManager_RecvTunnelData;
 begin
-  // fixed local connect info
+  { fixed local connect info }
   FRecvTunnel.GetIO_Array(IO_Array);
   for pid in IO_Array do
     begin
@@ -635,7 +639,7 @@ begin
 
   sendDE := TDataFrameEngine.Create;
   sendDE.WriteSectionText(ServerConfig);
-  SendTunnel.BroadcastSendDirectStreamCmd(C_RegServer, sendDE);
+  SendTunnel.BroadcastDirectStreamCmd(C_RegServer, sendDE);
   DisposeObject(sendDE);
 end;
 
@@ -710,7 +714,7 @@ begin
 
   sendDE := TDataFrameEngine.Create;
   sendDE.WriteSectionText(ServerConfig);
-  SendTunnel.BroadcastSendDirectStreamCmd(C_RegServer, sendDE);
+  SendTunnel.BroadcastDirectStreamCmd(C_RegServer, sendDE);
   DisposeObject(sendDE);
 
   OutData.WriteBool(True);
@@ -752,7 +756,7 @@ begin
 
   sendDE := TDataFrameEngine.Create;
   sendDE.WriteSectionText(ServerConfig);
-  SendTunnel.BroadcastSendDirectStreamCmd(C_RegServer, sendDE);
+  SendTunnel.BroadcastDirectStreamCmd(C_RegServer, sendDE);
   DisposeObject(sendDE);
 end;
 
@@ -783,7 +787,7 @@ begin
 
   if not existedSameOnlineServer then
     begin
-      // delete local configure
+      { delete local configure }
       ns := TCoreClassStringList.Create;
       ServerConfig.GetSectionList(ns);
 
@@ -798,7 +802,7 @@ begin
       ServerConfig.Rebuild;
     end;
 
-  // sync all client
+  { sync all client }
   for pid in IO_Array do
     begin
       peer := RecvTunnel.PeerIO[pid];
@@ -814,13 +818,13 @@ begin
 
   sendDE := TDataFrameEngine.Create;
   sendDE.WriteSectionText(ServerConfig);
-  SendTunnel.BroadcastSendDirectStreamCmd(C_RegServer, sendDE);
+  SendTunnel.BroadcastDirectStreamCmd(C_RegServer, sendDE);
   DisposeObject(sendDE);
 end;
 
-constructor TServerManager.Create(ARecvTunnel, ASendTunnel: TCommunicationFrameworkServer; AClientPoolDefaultClass: TCommunicationFrameworkClientClass);
+constructor TServerManager.Create(RecvTunnel_, SendTunnel_: TCommunicationFrameworkServer; AClientPoolDefaultClass: TCommunicationFrameworkClientClass);
 begin
-  inherited Create(ARecvTunnel, ASendTunnel);
+  inherited Create(RecvTunnel_, SendTunnel_);
 
   FRecvTunnel.PeerClientUserDefineClass := TServerManager_RecvTunnelData;
   FSendTunnel.PeerClientUserDefineClass := TServerManager_SendTunnelData;

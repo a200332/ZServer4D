@@ -136,6 +136,10 @@ object FileStoreServiceForm: TFileStoreServiceForm
     object OptTabSheet: TTabSheet
       Caption = 'Options'
       ImageIndex = 2
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 0
       object BindIPEdit: TLabeledEdit
         Left = 136
         Top = 11
@@ -174,6 +178,10 @@ object FileStoreServiceForm: TFileStoreServiceForm
     object ConnectTreeTabSheet: TTabSheet
       Caption = 'connect tree'
       ImageIndex = 1
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 0
       object TreeView: TTreeView
         Left = 0
         Top = 0
