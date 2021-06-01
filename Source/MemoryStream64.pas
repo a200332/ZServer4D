@@ -144,6 +144,7 @@ type
   end;
 
   TStream64 = TMemoryStream64;
+  TMS64 = TMemoryStream64;
 
   TMemoryStream64List_Decl = {$IFDEF FPC}specialize {$ENDIF FPC} TGenericsList<TMemoryStream64>;
 
@@ -153,6 +154,27 @@ type
   end;
 
   TStream64List = TMemoryStream64List;
+  TMS64List = TMemoryStream64List;
+
+  TMemoryStream64ThreadList = class(TMemoryStream64List_Decl)
+  private
+    FCritical: TCritical;
+  public
+    AutoFreeRaster: Boolean;
+    constructor Create;
+    destructor Destroy; override;
+    procedure Lock;
+    procedure UnLock;
+    procedure Remove(obj: TMemoryStream64);
+    procedure Delete(index: Integer);
+    procedure Clear;
+    procedure Clean;
+  end;
+
+  TStream64CriticalList = TMemoryStream64ThreadList;
+  TMS64CriticalList = TMemoryStream64ThreadList;
+  TStream64ThreadList = TMemoryStream64ThreadList;
+  TMS64ThreadList = TMemoryStream64ThreadList;
 
   IMemoryStream64WriteTrigger = interface
     procedure TriggerWrite64(Count: Int64);
@@ -251,6 +273,8 @@ type
     function read(var buffer; Count: Int64): Int64;
     function Seek(const Offset: Int64; origin: TSeekOrigin): Int64;
 
+    function CopyFrom(const source: TCoreClassStream; Count: Int64): Int64;
+
     // Serialized writer
     procedure WriteBool(const buff: Boolean);
     procedure WriteInt8(const buff: ShortInt);
@@ -288,12 +312,16 @@ type
     function ReadMD5: TMD5;
   end;
 
+  TM64 = TMem64;
+
   TMem64List_Decl = {$IFDEF FPC}specialize {$ENDIF FPC} TGenericsList<TMem64>;
 
   TMem64List = class(TMem64List_Decl)
   public
     procedure Clean;
   end;
+
+  TM64List = TMem64List;
 
 {$IFDEF FPC}
 
@@ -614,6 +642,15 @@ begin
   if FProtectedMode then
       Exit;
 
+  if stream is TMemoryStream64 then
+    begin
+      Clear;
+      if TMemoryStream64(stream).Size > 0 then
+          WritePtr(TMemoryStream64(stream).Memory, TMemoryStream64(stream).Size);
+      Position := 0;
+      Exit;
+    end;
+
   stream.Position := 0;
   SetSize(stream.Size);
   if stream.Size > 0 then
@@ -666,6 +703,15 @@ var
   Num: NativeInt;
   Rest: NativeInt;
 begin
+  if stream is TMemoryStream64 then
+    begin
+      TMemoryStream64(stream).Clear;
+      if Size > 0 then
+          TMemoryStream64(stream).WritePtr(Memory, Size);
+      TMemoryStream64(stream).Position := 0;
+      Exit;
+    end;
+
   if Size > 0 then
     begin
       p := FMemory;
@@ -1126,6 +1172,66 @@ begin
   for i := 0 to Count - 1 do
       DisposeObject(Items[i]);
   Clear;
+end;
+
+constructor TMemoryStream64ThreadList.Create;
+begin
+  inherited Create;
+  FCritical := TCritical.Create;
+  AutoFreeRaster := False;
+end;
+
+destructor TMemoryStream64ThreadList.Destroy;
+begin
+  DisposeObject(FCritical);
+  Clear;
+  inherited Destroy;
+end;
+
+procedure TMemoryStream64ThreadList.Lock;
+begin
+  FCritical.Lock;
+end;
+
+procedure TMemoryStream64ThreadList.UnLock;
+begin
+  FCritical.UnLock;
+end;
+
+procedure TMemoryStream64ThreadList.Remove(obj: TMemoryStream64);
+begin
+  if AutoFreeRaster then
+      DisposeObject(obj);
+  inherited Remove(obj);
+end;
+
+procedure TMemoryStream64ThreadList.Delete(index: Integer);
+begin
+  if (index >= 0) and (index < Count) then
+    begin
+      if AutoFreeRaster then
+          DisposeObject(Items[index]);
+      inherited Delete(index);
+    end;
+end;
+
+procedure TMemoryStream64ThreadList.Clear;
+var
+  i: Integer;
+begin
+  if AutoFreeRaster then
+    for i := 0 to Count - 1 do
+        DisposeObject(Items[i]);
+  inherited Clear;
+end;
+
+procedure TMemoryStream64ThreadList.Clean;
+var
+  i: Integer;
+begin
+  for i := 0 to Count - 1 do
+      DisposeObject(Items[i]);
+  inherited Clear;
 end;
 
 constructor TMemoryStream64OfWriteTrigger.Create(ATrigger: IMemoryStream64WriteTrigger);
@@ -1632,6 +1738,53 @@ begin
     TSeekOrigin.soEnd: FPosition := FSize + Offset;
   end;
   Result := FPosition;
+end;
+
+function TMem64.CopyFrom(const source: TCoreClassStream; Count: Int64): Int64;
+const
+  MaxBufSize = $F000;
+var
+  BufSize, n: Int64;
+  buffer: PByte;
+begin
+  if FProtectedMode then
+      RaiseInfo('protected mode');
+
+  if source is TMemoryStream64 then
+    begin
+      WritePtr(TMemoryStream64(source).PositionAsPtr, Count);
+      TMemoryStream64(source).Position := TMemoryStream64(source).FPosition + Count;
+      Result := Count;
+      Exit;
+    end;
+
+  if Count <= 0 then
+    begin
+      source.Position := 0;
+      Count := source.Size;
+    end;
+
+  Result := Count;
+  if Count > MaxBufSize then
+      BufSize := MaxBufSize
+  else
+      BufSize := Count;
+
+  buffer := System.GetMemory(BufSize);
+  try
+    while Count <> 0 do
+      begin
+        if Count > BufSize then
+            n := BufSize
+        else
+            n := Count;
+        source.read(buffer^, n);
+        WritePtr(buffer, n);
+        dec(Count, n);
+      end;
+  finally
+      System.FreeMem(buffer);
+  end;
 end;
 
 procedure TMem64.WriteBool(const buff: Boolean);

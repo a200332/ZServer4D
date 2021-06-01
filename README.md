@@ -251,27 +251,24 @@ ZServer4D是系统化的生产工艺地基，它并不像VCL那样傻瓜，可�
 
 ## 最后更新日志
 
-**大更新数据编码方式**
+- **更新：BigStream如果为TMemoryStream/TMemoryStream64，可以自动化支持磁盘空间交换（使用临时文件替代内存块）**
+- BigStream的文件转存机制：如果BigStream在队列中，同时它达到了尺寸要求，并且它的类型为TMemoryStream/TMemoryStream64，启动转存机制
+- 新增一个标准三层范式，以名片的增删查改为中心功能：DBService->InternetService->Client ，该Demo也包括了服务器间通讯的事件桥机制Demo，我在代码中已备注中文
+- 新增2个OrderStruct相关Demo，同时也演示了多线程的程序范式.
 
-- 优化单通道双工机制，CustomProtocol模型可与oc/swift/c++/java的异步双工良好对接，在ZAI授权项目已有商业案例!
-- DataFrameEngine的Array类型全部使用连续类型分配，不再使用指针分配
-- DataFrameEngine新增FastEncodeTo方法替代EncodeTo，FastEngineTo构建二进制数据结构在高并发环境下与EncodeTo差别很大，FastEngineTo使用零copy机制构建二进制结构
-- 当FastEncrypt为True，全部使用FastEncodeTo发送数据，默认情况下为True
-- 默认通讯协议不再压缩
-- 通讯性能大约提升10%
-- 默认情况下不再使用种子数加密，但是仍然兼容种子数加密
-- 大更新兼容老协议，对原有服务器和客户端无影响
+## 前一版本更新
 
-**加解密性能优化**
+- 规范了双通道释放机制：必须先释放个别的RecvTunnel/SendTunnel，然后再去释放双通道框架
+- 更新：修复CoreClasses库中OrderStruct中destroy没有override导致内存泄露的问题
+- 更新：修复RunHPC_Stream这类方法中destroy没有override导致内存泄露的问题
+- 更新：修正部分ZDB1.0体系中的笼统命名
+- 更新：修正部分ZDB1.0中cache的普适性
+- 更新：datastore service支持体系中的加解密机制
+- 更新：datastore service支持体系可以自动化解码数据库stream
+- 重大机制更新：新增支持p2pVM支持连接克隆机制，以后有空我会补充该机制demo
+- 重大机制更新：新增支持服务器间自动化数据转发桥接器机制，以后有空我会补充该机制demo
 
-- ZS过去使用的协议加密方式会反复生成密钥,现在使用实例化密钥替代,加密性能大约提升了1倍
-- 跑压力测试demo请使用服务器系统,win10跑压测可能发生假死现象
 
-**全面支持Radstudio10.4.2**
-
-- 修复p2pVM主循环问题
-- 内核新增OrderStrtuct以支持ThreadPos
-- 全面支持10.4.2
 
 [更多更新日志](https://github.com/PassByYou888/ZServer4D/update.md)
 
